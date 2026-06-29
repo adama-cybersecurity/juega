@@ -330,9 +330,10 @@
       const h=tileCenter(g.def.home.c, g.def.home.r);
       g.x=h.x; g.y=h.y;
       g.dir={x:(i%2===0?1:-1),y:0};
-      g.releaseAt = i*60; // salen escalonados
+      g.releaseAt = i*35; // salen escalonados pero rápido
       g.timer=0;
       g.eaten=false;
+      g.acc=0;
     });
     frightened=0;
   }
@@ -438,7 +439,7 @@
         em:ems[Math.floor(Math.random()*ems.length)]
       });
     }
-    bigHeart=70;
+    bigHeart=110;
   }
   function updateHearts(){
     for(const h of hearts){ h.x+=h.vx; h.y+=h.vy; h.vy-=0.006; h.life--; }
@@ -455,12 +456,18 @@
       ctx.restore();
     });
     if(bigHeart>0){
-      const t=1-bigHeart/70;
+      const t=1-bigHeart/110;
+      const a=Math.sin(Math.min(1,t)*Math.PI);
       ctx.save();
-      ctx.globalAlpha=Math.sin(Math.min(1,t)*Math.PI);
-      ctx.font=(60+t*45)+'px serif';
+      ctx.globalAlpha=a;
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText('💚',canvas.width/2,canvas.height/2);
+      ctx.font=(56+t*40)+'px serif';
+      ctx.fillText('💚',canvas.width/2,canvas.height/2-22);
+      ctx.font='bold '+(36+t*18)+'px Segoe UI';
+      ctx.fillStyle='#ff7eb3';
+      ctx.shadowColor='#ff2e7e'; ctx.shadowBlur=20;
+      ctx.fillText('Ale',canvas.width/2,canvas.height/2+36);
+      ctx.shadowBlur=0;
       ctx.restore();
     }
   }
@@ -537,12 +544,17 @@
   function moveGhost(g){
     g.timer++;
     const released=g.timer>g.releaseAt;
-    const speed = g.eaten?2 : (frightened>0?1:2);
-
-    // if in home and not released, stay aligned (no bob so grid stays exact)
     if(!released){
-      return;
+      return; // en casa, esperando salir
     }
+
+    // Velocidad por acumulador: avanza de a 2px (mantiene la rejilla exacta)
+    // pero solo algunos frames, para ir más lento que el jugador.
+    const rate = g.eaten ? 1 : (frightened>0 ? 0.5 : 0.66);
+    g.acc = (g.acc||0) + rate;
+    if(g.acc < 1) return;
+    g.acc -= 1;
+    const speed = 2;
 
     if(atTileCenter(g)){
       snap(g);
@@ -555,11 +567,10 @@
       let target;
       if(g.eaten){ target=g.def.home; }
       else if(frightened>0){ // flee
-        target={c:pac? -5:0, r:-5};
         const t=curTile(g);
-        // pick option farthest from pac
         choices.sort((a,b)=>dist2(t.c+b.x,t.r+b.y)-dist2(t.c+a.x,t.r+a.y));
         g.dir=choices[0];
+        g.x+=g.dir.x*speed; g.y+=g.dir.y*speed; wrap(g);
         return;
       } else {
         target=curTile(pac);
@@ -576,7 +587,7 @@
     // reached home while eaten -> revive
     if(g.eaten){
       const h=tileCenter(g.def.home.c,g.def.home.r);
-      if(Math.hypot(g.x-h.x,g.y-h.y)<6){g.eaten=false;g.timer=0;g.releaseAt=30;}
+      if(Math.hypot(g.x-h.x,g.y-h.y)<6){g.eaten=false;g.timer=0;g.releaseAt=20;}
     }
   }
 
