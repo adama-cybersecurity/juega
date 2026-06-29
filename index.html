@@ -147,6 +147,36 @@
     opacity:.9;
   }
   .credit b{color:var(--neon);}
+  .tipcard{
+    background:linear-gradient(180deg,#0a1230,#070a1c);
+    border:1px solid var(--neon2);
+    border-radius:14px;
+    padding:20px 18px;
+    max-width:300px;
+    box-shadow:0 0 25px rgba(0,255,156,.35);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+  .tiptag{
+    font-size:11px;
+    letter-spacing:2px;
+    font-weight:800;
+    color:var(--neon2);
+    text-transform:uppercase;
+  }
+  #tipText{
+    margin:0;
+    font-size:15px;
+    line-height:1.5;
+    color:#e6fff4;
+  }
+  #tipBtn{
+    margin-top:2px;
+    background:linear-gradient(180deg,var(--neon2),#00b06c);
+    color:#021810;
+  }
 </style>
 </head>
 <body>
@@ -172,6 +202,14 @@
 
   <div class="stage">
     <canvas id="game" width="448" height="496"></canvas>
+
+    <div class="overlay tipmodal hidden" id="tipModal">
+      <div class="tipcard">
+        <div class="tiptag">🛡️ TIP DE CIBERSEGURIDAD</div>
+        <p id="tipText"></p>
+        <button id="tipBtn">ACEPTAR Y SEGUIR</button>
+      </div>
+    </div>
 
     <div class="overlay" id="overlay">
       <h2 id="ovTitle">CYBER-MAN</h2>
@@ -348,6 +386,102 @@
     touchStart={x:t.clientX,y:t.clientY};
   },{passive:true});
 
+  // ---- Tips de ciberseguridad (al comer el escudo) ----
+  const TIPS = [
+    "Nunca reutilices la misma contraseña en varias cuentas.",
+    "Activa la verificación en dos pasos (2FA) siempre que puedas.",
+    "No abras enlaces ni archivos adjuntos de correos sospechosos.",
+    "Mantén tu sistema operativo y antivirus siempre actualizados.",
+    "Desconfía de mensajes que piden datos urgentes: puede ser phishing.",
+    "Usa contraseñas largas; mejor una frase que una sola palabra.",
+    "Haz copias de seguridad: tu mejor defensa contra el ransomware.",
+    "Verifica que la dirección web empiece con https antes de dar tus datos.",
+    "Evita hacer operaciones bancarias en redes WiFi públicas.",
+    "Bloquea tu equipo cuando te alejes, aunque sea un momento.",
+    "Descarga aplicaciones solo desde tiendas oficiales.",
+    "Si una oferta parece demasiado buena para ser verdad, es una estafa.",
+    "No conectes USB desconocidos a tu computadora.",
+    "Revisa quién te envía un correo antes de hacer clic en algo."
+  ];
+  const tipModal = document.getElementById('tipModal');
+  const tipText = document.getElementById('tipText');
+  const tipBtn = document.getElementById('tipBtn');
+
+  function showTip(){
+    tipText.textContent = TIPS[Math.floor(Math.random()*TIPS.length)];
+    tipModal.classList.remove('hidden');
+    state='tip';
+  }
+  tipBtn.addEventListener('click',()=>{
+    tipModal.classList.add('hidden');
+    frightened = 7*60; // ahora sí activa el modo escudo
+    if(dotsLeft<=0){ state='win'; showWin(); }
+    else state='play';
+  });
+
+  // ---- Easter egg: toca las 4 esquinas y aparecen corazones ----
+  let hearts=[];
+  let bigHeart=0;
+  const cornersHit=new Set();
+  let cornerTime=0;
+
+  function spawnHearts(){
+    const ems=['💚','💙','❤️','💜','💚'];
+    for(let i=0;i<18;i++){
+      hearts.push({
+        x:30+Math.random()*(canvas.width-60),
+        y:canvas.height*0.55+Math.random()*140,
+        vx:(Math.random()-0.5)*0.7,
+        vy:-(0.7+Math.random()*1.7),
+        life:80+Math.random()*50,
+        size:16+Math.random()*22,
+        em:ems[Math.floor(Math.random()*ems.length)]
+      });
+    }
+    bigHeart=70;
+  }
+  function updateHearts(){
+    for(const h of hearts){ h.x+=h.vx; h.y+=h.vy; h.vy-=0.006; h.life--; }
+    hearts=hearts.filter(h=>h.life>0);
+    if(bigHeart>0) bigHeart--;
+  }
+  function drawHearts(){
+    hearts.forEach(h=>{
+      ctx.save();
+      ctx.globalAlpha=Math.max(0,Math.min(1,h.life/35));
+      ctx.font=h.size+'px serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(h.em,h.x,h.y);
+      ctx.restore();
+    });
+    if(bigHeart>0){
+      const t=1-bigHeart/70;
+      ctx.save();
+      ctx.globalAlpha=Math.sin(Math.min(1,t)*Math.PI);
+      ctx.font=(60+t*45)+'px serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('💚',canvas.width/2,canvas.height/2);
+      ctx.restore();
+    }
+  }
+  canvas.addEventListener('pointerdown',e=>{
+    const rect=canvas.getBoundingClientRect();
+    const cx=(e.clientX-rect.left)*(canvas.width/rect.width);
+    const cy=(e.clientY-rect.top)*(canvas.height/rect.height);
+    const m=72;
+    let corner=null;
+    if(cx<m && cy<m) corner='tl';
+    else if(cx>canvas.width-m && cy<m) corner='tr';
+    else if(cx<m && cy>canvas.height-m) corner='bl';
+    else if(cx>canvas.width-m && cy>canvas.height-m) corner='br';
+    if(!corner) return;
+    const now=performance.now();
+    if(now-cornerTime>4500) cornersHit.clear();
+    cornerTime=now;
+    cornersHit.add(corner);
+    if(cornersHit.size===4){ spawnHearts(); cornersHit.clear(); }
+  });
+
   // ---- Movement helpers ----
   function mod(n,m){ return ((n % m) + m) % m; }
   function atTileCenter(ent){
@@ -394,9 +528,9 @@
       const cc=(t.c+COLS)%COLS;
       const ch=grid[t.r][cc];
       if(ch==='.'){grid[t.r][cc]=' ';score+=10;dotsLeft--;updateHud();}
-      else if(ch==='o'){grid[t.r][cc]=' ';score+=50;dotsLeft--;frightened=7*60;updateHud();}
+      else if(ch==='o'){grid[t.r][cc]=' ';score+=50;dotsLeft--;updateHud();showTip();}
     }
-    if(dotsLeft<=0){state='win';showWin();}
+    if(dotsLeft<=0 && state==='play'){state='win';showWin();}
     if(pac.dir.x||pac.dir.y) pac.mouth+=0.2;
   }
 
@@ -581,6 +715,7 @@
       ctx.textAlign='center';
       ctx.fillText('MODO ESCUDO: '+Math.ceil(frightened/60)+'s', canvas.width/2, canvas.height-6);
     }
+    drawHearts();
   }
 
   // ---- Overlays ----
@@ -615,6 +750,7 @@
       ghosts.forEach(moveGhost);
       checkCollisions();
     }
+    updateHearts();
     draw();
     requestAnimationFrame(loop);
   }
