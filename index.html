@@ -138,6 +138,15 @@
     text-align:center;
     letter-spacing:1px;
   }
+  .credit{
+    font-size:12px;
+    color:#9fb6e6;
+    text-align:center;
+    letter-spacing:2px;
+    margin:6px 0 14px;
+    opacity:.9;
+  }
+  .credit b{color:var(--neon);}
 </style>
 </head>
 <body>
@@ -169,13 +178,14 @@
       <p id="ovText">Eres el <b style="color:var(--pac)">Antivirus</b>. Limpia todos los datos infectados y huye del malware.</p>
       <div class="legend">
         <span>👾 TROYANO &nbsp; 🪱 GUSANO &nbsp; 🔒 RANSOM &nbsp; 🕵️ SPYWARE</span>
-        <span>💊 Parche: te hace invencible y puedes eliminar virus</span>
+        <span>🛡️ Escudo Antivirus: te hace invencible y eliminas virus</span>
       </div>
       <button id="startBtn">JUGAR</button>
     </div>
   </div>
 
   <div class="hint">Teclas / desliza para mover · Toca para iniciar</div>
+  <div class="credit">by <b>Jorge Morales</b></div>
 
 <script>
 (() => {
@@ -478,13 +488,18 @@
           ctx.arc(x+TILE/2,y+TILE/2,2,0,7);
           ctx.fill();
         }else if(ch==='o'){
-          const pulse=2+Math.sin(animFrame*0.2)*1.5;
-          ctx.fillStyle='#00ff9c';
-          ctx.shadowColor='#00ff9c'; ctx.shadowBlur=10;
-          ctx.beginPath();
-          ctx.arc(x+TILE/2,y+TILE/2,5+pulse*0.4,0,7);
-          ctx.fill();
+          // power-up: escudo antivirus (protección)
+          const pulse=1+Math.sin(animFrame*0.2)*0.14;
+          ctx.save();
+          ctx.translate(x+TILE/2,y+TILE/2);
+          ctx.scale(pulse,pulse);
+          ctx.font='13px serif';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.shadowColor='#00ff9c'; ctx.shadowBlur=9;
+          ctx.fillText('🛡️',0,1);
           ctx.shadowBlur=0;
+          ctx.restore();
         }
       }
     }
@@ -564,7 +579,7 @@
       ctx.fillStyle='rgba(0,255,156,.9)';
       ctx.font='bold 11px Segoe UI';
       ctx.textAlign='center';
-      ctx.fillText('MODO PARCHE: '+Math.ceil(frightened/60)+'s', canvas.width/2, canvas.height-6);
+      ctx.fillText('MODO ESCUDO: '+Math.ceil(frightened/60)+'s', canvas.width/2, canvas.height-6);
     }
   }
 
