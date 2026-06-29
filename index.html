@@ -198,7 +198,7 @@
     "######.##### ## #####.######",
     "######.##### ## #####.######",
     "######.##          ##.######",
-    "######.## ######## ##.######",
+    "######.## ## ## ## ##.######",
     "######.## #      # ##.######",
     "      .   #      #   .      ",
     "######.## #      # ##.######",
@@ -249,8 +249,8 @@
   };
 
   // Entidades
-  const startPac = {c:13.5, r:23};
-  const pac = {x:0,y:0,dir:{x:0,y:0},next:{x:0,y:0},speed:1.7,mouth:0,radius:TILE/2-2};
+  const startPac = {c:13, r:23};
+  const pac = {x:0,y:0,dir:{x:0,y:0},next:{x:0,y:0},speed:2,mouth:0,radius:TILE/2-2};
 
   const ghostDefs = [
     {name:'TROYANO', color:'#ff3b6b', emoji:'👾', home:{c:13,r:14}},
@@ -339,9 +339,12 @@
   },{passive:true});
 
   // ---- Movement helpers ----
+  function mod(n,m){ return ((n % m) + m) % m; }
   function atTileCenter(ent){
-    return (Math.abs((ent.x-TILE/2)%TILE - TILE/2)<1.6 &&
-            Math.abs((ent.y-TILE/2)%TILE - TILE/2)<1.6);
+    const ax = mod(ent.x - TILE/2, TILE);
+    const ay = mod(ent.y - TILE/2, TILE);
+    const near = v => (v <= 1.2 || v >= TILE - 1.2);
+    return near(ax) && near(ay);
   }
   function curTile(ent){
     return {c:Math.round((ent.x-TILE/2)/TILE), r:Math.round((ent.y-TILE/2)/TILE)};
@@ -390,11 +393,10 @@
   function moveGhost(g){
     g.timer++;
     const released=g.timer>g.releaseAt;
-    const speed = g.eaten?2.6 : (frightened>0?1.0:1.45+level*0.05);
+    const speed = g.eaten?2 : (frightened>0?1:2);
 
-    // if in home and not released, bob
+    // if in home and not released, stay aligned (no bob so grid stays exact)
     if(!released){
-      g.y += Math.sin(g.timer*0.1)*0.3;
       return;
     }
 
